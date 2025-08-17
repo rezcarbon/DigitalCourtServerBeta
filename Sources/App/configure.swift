@@ -8,22 +8,25 @@ public func configure(_ app: Application) async throws {
     // Serves files from `Public/` directory
     // app.middleware.use(FileMiddleware(publicDirectory: app.directory.publicDirectory))
 
-    // --- 1. Configure MongoDB Connection ---
-    try app.databases.use(
-        .mongo(
-            connectionString: "mongodb+srv://doadmin:v9nh46B30bV1i2f8@db-mongodb-nyc2-mustaffar-4f008914.mongo.ondigitalocean.com/DigitalCourt?replicaSet=db-mongodb-nyc2-mustaffar&tls=true&authSource=admin"
-        ),
-        as: .mongo
-    )
+    // --- 1. Configure MongoDB Connection from Environment ---
+    // Get the database connection string from the DATABASE_URL environment variable.
+    guard let mongoURL = Environment.get("DATABASE_URL") else {
+        // If the variable is not set, we cannot proceed.
+        // This is a fatal error for a production environment.
+        fatalError("DATABASE_URL environment variable not set.")
+    }
+
+    // Use the connection string to configure the database.
+    try app.databases.use(.mongo(connectionString: mongoURL), as: .mongo)
 
     // --- 2. Configure Password Hasher ---
-    // Sets the default password hashing algorithm to bcrypt. This is the crucial
-    // step that was missing and causing the downstream errors.
     app.passwords.use(.bcrypt)
 
     // --- 3. Configure JWT Signer ---
-    // Sets up the key that will be used to sign and verify JSON Web Tokens.
-    let jwtSecret = "vaderprime@19061975"
+    // It's also good practice to get the JWT secret from the environment.
+    guard let jwtSecret = Environment.get("JWT_SECRET") else {
+        fatalError("JWT_SECRET environment variable not set.")
+    }
     app.jwt.signers.use(.hs256(key: jwtSecret))
 
 
