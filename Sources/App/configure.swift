@@ -24,33 +24,30 @@ public func configure(_ app: Application) async throws {
 
     app.logger.info("Attempting to connect to MongoDB")
     
-    // Check if connection string contains SSL parameters
-    var finalMongoURL = mongoURL
-    if !mongoURL.contains("ssl=") && !mongoURL.contains("tls=") {
-        // Add SSL parameter if not present
-        if mongoURL.contains("?") {
-            finalMongoURL += "&ssl=true"
-        } else {
-            finalMongoURL += "?ssl=true"
-        }
-        app.logger.info("Added SSL parameter to connection string")
+    // Log connection information (mask sensitive data)
+    var maskedURL = mongoURL
+    if let range = mongoURL.range(of: "://")?.upperBound,
+       let atIndex = mongoURL.firstIndex(of: "@") {
+        maskedURL = String(mongoURL[..<range]) + "***" + String(mongoURL[atIndex...])
+    }
+    app.logger.info("MongoDB connection string: \(maskedURL)")
+    
+    // Check for required parameters
+    if !mongoURL.contains("tls=true") && !mongoURL.contains("ssl=true") {
+        app.logger.warning("MongoDB connection string missing TLS/SSL parameter")
     }
     
-    // Log connection information (mask sensitive data)
-    if let urlComponents = URLComponents(string: mongoURL) {
-        var maskedURL = mongoURL
-        if let password = urlComponents.password {
-            maskedURL = mongoURL.replacingOccurrences(of: ":\(password)@", with: ":***@")
-        }
-        app.logger.info("MongoDB connection string: \(maskedURL)")
+    if !mongoURL.contains("authSource=admin") {
+        app.logger.warning("MongoDB connection string missing authSource parameter")
     }
 
     // Use the connection string to configure the database.
     do {
-        try app.databases.use(.mongo(connectionString: finalMongoURL), as: .mongo)
+        try app.databases.use(.mongo(connectionString: mongoURL), as: .mongo)
         app.logger.info("Successfully configured MongoDB connection")
     } catch {
         app.logger.critical("Failed to configure MongoDB connection: \(error)")
+        app.logger.critical("Error type: \(type(of: error))")
         app.logger.critical("Error details: \(error.localizedDescription)")
         throw Abort(.internalServerError, reason: "Database configuration failed: \(error.localizedDescription)")
     }
