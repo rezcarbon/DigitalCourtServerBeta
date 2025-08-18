@@ -22,10 +22,15 @@ public func configure(_ app: Application) async throws {
         throw Abort(.internalServerError, reason: "Database configuration missing")
     }
 
+    app.logger.info("Attempting to connect to MongoDB with URL: \(mongoURL.prefix(20))...") // Log prefix only for security
+
     // Use the connection string to configure the database.
     do {
         try app.databases.use(.mongo(connectionString: mongoURL), as: .mongo)
         app.logger.info("Successfully connected to MongoDB")
+        
+        // Test the connection
+        try await testDatabaseConnection(app)
     } catch {
         app.logger.critical("Failed to connect to MongoDB: \(error)")
         throw Abort(.internalServerError, reason: "Database connection failed: \(error.localizedDescription)")
@@ -47,4 +52,19 @@ public func configure(_ app: Application) async throws {
 
     // Register your routes
     try routes(app)
+}
+
+// Test database connection
+private func testDatabaseConnection(_ app: Application) async throws {
+    app.logger.info("Testing database connection...")
+    do {
+        // Try to perform a simple query to test the connection
+        let result = try await app.db.mongo.raw.runCommand([
+            "ping": 1
+        ], as: [String: Any].self)
+        app.logger.info("Database connection test successful: \(result)")
+    } catch {
+        app.logger.error("Database connection test failed: \(error)")
+        throw error
+    }
 }
