@@ -23,7 +23,13 @@ public func configure(_ app: Application) async throws {
     }
 
     // Use the connection string to configure the database.
-    try app.databases.use(.mongo(connectionString: mongoURL), as: .mongo)
+    do {
+        try app.databases.use(.mongo(connectionString: mongoURL), as: .mongo)
+        app.logger.info("Successfully connected to MongoDB")
+    } catch {
+        app.logger.critical("Failed to connect to MongoDB: \(error)")
+        throw Abort(.internalServerError, reason: "Database connection failed: \(error.localizedDescription)")
+    }
 
     // --- 2. Configure Password Hasher ---
     app.passwords.use(.bcrypt)
@@ -37,6 +43,7 @@ public func configure(_ app: Application) async throws {
     
     // Use the JWT secret for signing tokens
     app.jwt.signers.use(.hs256(key: jwtSecret))
+    app.logger.info("JWT configuration initialized")
 
     // Register your routes
     try routes(app)
