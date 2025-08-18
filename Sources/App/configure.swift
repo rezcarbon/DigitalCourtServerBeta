@@ -2,7 +2,6 @@ import Vapor
 import Fluent
 import FluentMongoDriver
 import JWT
-import CORS
 
 // Configures your application
 public func configure(_ app: Application) async throws {
@@ -14,6 +13,7 @@ public func configure(_ app: Application) async throws {
     // Configure CORS
     let corsConfiguration: CORSMiddleware.Configuration
     if let allowedOrigins = Environment.get("ALLOWED_ORIGINS") {
+        // For production, use specific origins
         let origins = allowedOrigins.split(separator: ",").map { String($0).trimmingCharacters(in: .whitespaces) }
         corsConfiguration = CORSMiddleware.Configuration(
             allowedOrigin: .custom(origins),
@@ -21,7 +21,7 @@ public func configure(_ app: Application) async throws {
             allowedHeaders: [.accept, .authorization, .contentType, .origin, .xRequestedWith, .userAgent, .accessControlAllowOrigin]
         )
     } else {
-        // Default CORS configuration for development
+        // Default CORS configuration for development (allows all origins)
         corsConfiguration = CORSMiddleware.Configuration(
             allowedOrigin: .all,
             allowedMethods: [.GET, .POST, .PUT, .OPTIONS, .DELETE, .PATCH],
