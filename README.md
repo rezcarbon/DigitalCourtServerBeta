@@ -46,7 +46,7 @@ cp .env.example .env
 3. Update the `.env` file with your MongoDB connection details if needed:
 ```env
 # For a local MongoDB instance
-DATABASE_URL=mongodb://localhost:27017/digitalcourt
+DATABASE_URL=mongodb://localhost:27017/admin
 JWT_SECRET=your-super-secret-jwt-key-minimum-32-characters
 LOG_LEVEL=info
 ```

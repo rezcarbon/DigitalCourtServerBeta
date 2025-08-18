@@ -1,6 +1,6 @@
 import Vapor
 import Fluent
-import FluentMongoDriver
+import FluentPostgresDriver
 import JWT
 
 // Configures your application
@@ -10,53 +10,31 @@ public func configure(_ app: Application) async throws {
         app.logger.logLevel = Logger.Level(rawValue: logLevel) ?? .info
     }
 
-    // Serves files from `Public/` directory
-    // app.middleware.use(FileMiddleware(publicDirectory: app.directory.publicDirectory))
-
-    // --- 1. Configure MongoDB Connection from Environment ---
-    // Get the database connection string from the DATABASE_URL environment variable.
-    guard let mongoURL = Environment.get("DATABASE_URL") else {
-        // If the variable is not set, we cannot proceed.
-        // This is a fatal error for a production environment.
-        app.logger.critical("DATABASE_URL environment variable not set.")
-        throw Abort(.internalServerError, reason: "Database configuration missing")
+    // --- 1. Configure PostgreSQL Connection from Environment ---
+    // DigitalOcean provides the DATABASE_URL automatically.
+    // FluentPostgresDriver can parse this URL to configure the connection.
+    if let postgresURL = Environment.get("DATABASE_URL") {
+        app.logger.info("Configuring PostgreSQL with provided DATABASE_URL")
+        try app.databases.use(.postgres(url: postgresURL), as: .psql)
+    } else {
+        // Fallback for local development if DATABASE_URL is not set
+        app.logger.warning("DATABASE_URL not set. Using default local configuration.")
+        try app.databases.use(.postgres(
+            hostname: "localhost",
+            username: "vapor_username",
+            password: "vapor_password",
+            database: "vapor_database"
+        ), as: .psql)
     }
 
-    app.logger.info("Attempting to connect to MongoDB")
+    // --- 2. Run Migrations (if any) ---
+    app.migrations.add(CreateUser())
+    try await app.autoMigrate()
     
-    // Log connection information (mask sensitive data)
-    var maskedURL = mongoURL
-    if let range = mongoURL.range(of: "://")?.upperBound,
-       let atIndex = mongoURL.firstIndex(of: "@") {
-        maskedURL = String(mongoURL[..<range]) + "***" + String(mongoURL[atIndex...])
-    }
-    app.logger.info("MongoDB connection string: \(maskedURL)")
-    
-    // Check for required parameters
-    if !mongoURL.contains("tls=true") && !mongoURL.contains("ssl=true") {
-        app.logger.warning("MongoDB connection string missing TLS/SSL parameter")
-    }
-    
-    if !mongoURL.contains("authSource=admin") {
-        app.logger.warning("MongoDB connection string missing authSource parameter")
-    }
-
-    // Use the connection string to configure the database.
-    do {
-        try app.databases.use(.mongo(connectionString: mongoURL), as: .mongo)
-        app.logger.info("Successfully configured MongoDB connection")
-    } catch {
-        app.logger.critical("Failed to configure MongoDB connection: \(error)")
-        app.logger.critical("Error type: \(type(of: error))")
-        app.logger.critical("Error details: \(error.localizedDescription)")
-        throw Abort(.internalServerError, reason: "Database configuration failed: \(error.localizedDescription)")
-    }
-
-    // --- 2. Configure Password Hasher ---
+    // --- 3. Configure Password Hasher ---
     app.passwords.use(.bcrypt)
 
-    // --- 3. Configure JWT Signer ---
-    // It's also good practice to get the JWT secret from the environment.
+    // --- 4. Configure JWT Signer ---
     guard let jwtSecret = Environment.get("JWT_SECRET") else {
         app.logger.critical("JWT_SECRET environment variable not set.")
         throw Abort(.internalServerError, reason: "JWT configuration missing")
