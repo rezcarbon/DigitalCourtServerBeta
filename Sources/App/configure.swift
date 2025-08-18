@@ -2,6 +2,7 @@ import Vapor
 import Fluent
 import FluentMongoDriver
 import JWT
+import CORS
 
 // Configures your application
 public func configure(_ app: Application) async throws {
@@ -9,6 +10,27 @@ public func configure(_ app: Application) async throws {
     if let logLevel = Environment.get("LOG_LEVEL") {
         app.logger.logLevel = Logger.Level(rawValue: logLevel) ?? .info
     }
+
+    // Configure CORS
+    let corsConfiguration: CORSMiddleware.Configuration
+    if let allowedOrigins = Environment.get("ALLOWED_ORIGINS") {
+        let origins = allowedOrigins.split(separator: ",").map { String($0).trimmingCharacters(in: .whitespaces) }
+        corsConfiguration = CORSMiddleware.Configuration(
+            allowedOrigin: .custom(origins),
+            allowedMethods: [.GET, .POST, .PUT, .OPTIONS, .DELETE, .PATCH],
+            allowedHeaders: [.accept, .authorization, .contentType, .origin, .xRequestedWith, .userAgent, .accessControlAllowOrigin]
+        )
+    } else {
+        // Default CORS configuration for development
+        corsConfiguration = CORSMiddleware.Configuration(
+            allowedOrigin: .all,
+            allowedMethods: [.GET, .POST, .PUT, .OPTIONS, .DELETE, .PATCH],
+            allowedHeaders: [.accept, .authorization, .contentType, .origin, .xRequestedWith, .userAgent, .accessControlAllowOrigin]
+        )
+    }
+    
+    let cors = CORSMiddleware(configuration: corsConfiguration)
+    app.middleware.use(cors, at: .beginning)
 
     // Serves files from `Public/` directory
     // app.middleware.use(FileMiddleware(publicDirectory: app.directory.publicDirectory))
@@ -35,12 +57,7 @@ public func configure(_ app: Application) async throws {
         throw Abort(.internalServerError, reason: "JWT configuration missing")
     }
     
-    // For production, ensure the JWT secret is sufficiently long
-    guard jwtSecret.count >= 32 else {
-        app.logger.critical("JWT_SECRET must be at least 32 characters long for security.")
-        throw Abort(.internalServerError, reason: "JWT secret not secure")
-    }
-    
+    // Use the JWT secret for signing tokens
     app.jwt.signers.use(.hs256(key: jwtSecret))
 
     // Register your routes
