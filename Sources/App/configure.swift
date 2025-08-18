@@ -27,7 +27,8 @@ public func configure(_ app: Application) async throws {
         ), as: .psql)
     }
 
-    // --- 2. Run Migrations (if any) ---
+    // --- 2. Run Migrations ---
+    // This creates the 'users' table in your database on startup.
     app.migrations.add(CreateUser())
     try await app.autoMigrate()
     
