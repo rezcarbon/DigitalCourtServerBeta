@@ -59,10 +59,10 @@ private func testDatabaseConnection(_ app: Application) async throws {
     app.logger.info("Testing database connection...")
     do {
         // Try to perform a simple query to test the connection
-        let result = try await app.db.mongo.raw.runCommand([
+        let _ = try await app.db.mongo.raw.runCommand([
             "ping": 1
         ], as: [String: Any].self)
-        app.logger.info("Database connection test successful: \(result)")
+        app.logger.info("Database connection test successful")
     } catch {
         app.logger.error("Database connection test failed: \(error)")
         throw error
