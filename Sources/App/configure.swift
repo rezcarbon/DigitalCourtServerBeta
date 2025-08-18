@@ -10,28 +10,6 @@ public func configure(_ app: Application) async throws {
         app.logger.logLevel = Logger.Level(rawValue: logLevel) ?? .info
     }
 
-    // Configure CORS
-    let corsConfiguration: CORSMiddleware.Configuration
-    if let allowedOrigins = Environment.get("ALLOWED_ORIGINS") {
-        // For production, use specific origins
-        let origins = allowedOrigins.split(separator: ",").map { String($0).trimmingCharacters(in: .whitespaces) }
-        corsConfiguration = CORSMiddleware.Configuration(
-            allowedOrigin: .custom(origins),
-            allowedMethods: [.GET, .POST, .PUT, .OPTIONS, .DELETE, .PATCH],
-            allowedHeaders: [.accept, .authorization, .contentType, .origin, .xRequestedWith, .userAgent, .accessControlAllowOrigin]
-        )
-    } else {
-        // Default CORS configuration for development (allows all origins)
-        corsConfiguration = CORSMiddleware.Configuration(
-            allowedOrigin: .all,
-            allowedMethods: [.GET, .POST, .PUT, .OPTIONS, .DELETE, .PATCH],
-            allowedHeaders: [.accept, .authorization, .contentType, .origin, .xRequestedWith, .userAgent, .accessControlAllowOrigin]
-        )
-    }
-    
-    let cors = CORSMiddleware(configuration: corsConfiguration)
-    app.middleware.use(cors, at: .beginning)
-
     // Serves files from `Public/` directory
     // app.middleware.use(FileMiddleware(publicDirectory: app.directory.publicDirectory))
 
