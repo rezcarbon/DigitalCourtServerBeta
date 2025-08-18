@@ -1,6 +1,6 @@
 # DigitalCourtServer
 
-💧 A project built with the Vapor web framework.
+💧 A project built with the Vapor web framework for digital court proceedings.
 
 ## Getting Started
 

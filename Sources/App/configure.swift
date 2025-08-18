@@ -5,6 +5,11 @@ import JWT
 
 // Configures your application
 public func configure(_ app: Application) async throws {
+    // Configure logging based on environment
+    if let logLevel = Environment.get("LOG_LEVEL") {
+        app.logger.logLevel = Logger.Level(rawValue: logLevel) ?? .info
+    }
+
     // Serves files from `Public/` directory
     // app.middleware.use(FileMiddleware(publicDirectory: app.directory.publicDirectory))
 
@@ -13,7 +18,8 @@ public func configure(_ app: Application) async throws {
     guard let mongoURL = Environment.get("DATABASE_URL") else {
         // If the variable is not set, we cannot proceed.
         // This is a fatal error for a production environment.
-        fatalError("DATABASE_URL environment variable not set.")
+        app.logger.critical("DATABASE_URL environment variable not set.")
+        throw Abort(.internalServerError, reason: "Database configuration missing")
     }
 
     // Use the connection string to configure the database.
@@ -25,10 +31,17 @@ public func configure(_ app: Application) async throws {
     // --- 3. Configure JWT Signer ---
     // It's also good practice to get the JWT secret from the environment.
     guard let jwtSecret = Environment.get("JWT_SECRET") else {
-        fatalError("JWT_SECRET environment variable not set.")
+        app.logger.critical("JWT_SECRET environment variable not set.")
+        throw Abort(.internalServerError, reason: "JWT configuration missing")
     }
+    
+    // For production, ensure the JWT secret is sufficiently long
+    guard jwtSecret.count >= 32 else {
+        app.logger.critical("JWT_SECRET must be at least 32 characters long for security.")
+        throw Abort(.internalServerError, reason: "JWT secret not secure")
+    }
+    
     app.jwt.signers.use(.hs256(key: jwtSecret))
-
 
     // Register your routes
     try routes(app)
