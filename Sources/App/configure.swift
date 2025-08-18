@@ -22,15 +22,15 @@ public func configure(_ app: Application) async throws {
         throw Abort(.internalServerError, reason: "Database configuration missing")
     }
 
-    app.logger.info("Attempting to connect to MongoDB")
+    app.logger.info("Attempting to connect to MongoDB with URL (first 50 chars): \(mongoURL.prefix(50))...")
 
     // Use the connection string to configure the database.
     do {
         try app.databases.use(.mongo(connectionString: mongoURL), as: .mongo)
-        app.logger.info("Successfully connected to MongoDB")
+        app.logger.info("Successfully configured MongoDB connection")
     } catch {
-        app.logger.critical("Failed to connect to MongoDB: \(error)")
-        throw Abort(.internalServerError, reason: "Database connection failed: \(error.localizedDescription)")
+        app.logger.critical("Failed to configure MongoDB connection: \(error)")
+        throw Abort(.internalServerError, reason: "Database configuration failed: \(error.localizedDescription)")
     }
 
     // --- 2. Configure Password Hasher ---
