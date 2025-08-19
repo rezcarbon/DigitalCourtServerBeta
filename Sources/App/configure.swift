@@ -1,6 +1,6 @@
 import Vapor
 import Fluent
-import FluentPostgresDriver
+import FluentMongoDriver
 import JWT
 
 // Configures your application
@@ -10,25 +10,19 @@ public func configure(_ app: Application) async throws {
         app.logger.logLevel = Logger.Level(rawValue: logLevel) ?? .info
     }
 
-    // --- 1. Configure PostgreSQL Connection from Environment ---
-    // DigitalOcean provides the DATABASE_URL automatically.
-    // FluentPostgresDriver can parse this URL to configure the connection.
-    if let postgresURL = Environment.get("DATABASE_URL") {
-        app.logger.info("Configuring PostgreSQL with provided DATABASE_URL")
-        try app.databases.use(.postgres(url: postgresURL), as: .psql)
+    // --- 1. Configure MongoDB Connection from Environment ---
+    // Using MONGODB_URL for MongoDB connection
+    if let mongoURL = Environment.get("MONGODB_URL") {
+        app.logger.info("Configuring MongoDB with provided MONGODB_URL")
+        try app.databases.use(.mongo(connectionString: mongoURL), as: .mongo)
     } else {
-        // Fallback for local development if DATABASE_URL is not set
-        app.logger.warning("DATABASE_URL not set. Using default local configuration.")
-        try app.databases.use(.postgres(
-            hostname: "localhost",
-            username: "vapor_username",
-            password: "vapor_password",
-            database: "vapor_database"
-        ), as: .psql)
+        // Fallback for local development if MONGODB_URL is not set
+        app.logger.warning("MONGODB_URL not set. Using default local configuration.")
+        try app.databases.use(.mongo(connectionString: "mongodb://localhost:27017/digitalcourt"), as: .mongo)
     }
 
     // --- 2. Run Migrations ---
-    // This creates the 'users' table in your database on startup.
+    // This creates the 'users' collection in your database on startup.
     app.migrations.add(CreateUser())
     try await app.autoMigrate()
     

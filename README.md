@@ -4,13 +4,13 @@
 
 ## Getting Started
 
-### Prerequisites
+## Prerequisites
 - Swift 5.10 or later
-- Docker (for local development with PostgreSQL)
+- Docker (for local development with MongoDB)
 
 ## Local Development
 
 ### Option 1: Using Docker (Recommended)
 
 1. Make sure Docker is installed and running on your system.
-2. Start the services (PostgreSQL and the app):
+2. Start the services (MongoDB and the app):
