@@ -35,7 +35,8 @@ public func configure(_ app: Application) async throws {
             port: 5432,
             username: "vapor_username",
             password: "vapor_password",
-            database: "digitalcourt", tls: <#PostgresConnection.Configuration.TLS#>
+            database: "digitalcourt",
+            tls: .disable
         )
         
         app.databases.use(.postgres(
