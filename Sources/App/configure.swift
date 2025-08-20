@@ -18,9 +18,7 @@ public func configure(_ app: Application) async throws {
         
         do {
             // Parse the DATABASE_URL to extract connection parameters
-            guard let config = PostgresConfiguration(url: postgresURL) else {
-                throw Abort(.internalServerError, reason: "Invalid DATABASE_URL format")
-            }
+            let config = try SQLPostgresConfiguration(url: postgresURL)
             
             // Check if SSL is required (common pattern in DATABASE_URL)
             if postgresURL.contains("sslmode=require") || postgresURL.contains("ssl=true") {
@@ -57,13 +55,13 @@ public func configure(_ app: Application) async throws {
         // Fallback for local development if DATABASE_URL is not set
         app.logger.warning("DATABASE_URL not set. Using default local configuration.")
         
-        let config = PostgresConfiguration(
+        let config = SQLPostgresConfiguration(
             hostname: "localhost",
             port: 5432,
             username: "vapor_username",
             password: "vapor_password",
             database: "digitalcourt",
-            tlsConfiguration: nil
+            tls: .disable
         )
         
         app.databases.use(.postgres(configuration: config), as: .psql)
