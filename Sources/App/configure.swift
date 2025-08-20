@@ -14,9 +14,17 @@ public func configure(_ app: Application) async throws {
     // --- 1. Configure PostgreSQL Connection from Environment ---
     // App Platform provides the DATABASE_URL automatically.
     if let postgresURL = Environment.get("DATABASE_URL") {
-        app.logger.info("Configuring PostgreSQL with provided DATABASE_URL")
+        app.logger.info("Configuring PostgreSQL with provided DATABASE_URL: \(postgresURL)")
         
         do {
+            // Try to parse the URL to check if it's valid
+            guard let url = URL(string: postgresURL) else {
+                app.logger.error("Invalid DATABASE_URL format")
+                throw Abort(.internalServerError, reason: "Invalid DATABASE_URL format")
+            }
+            
+            app.logger.info("Parsed URL - Host: \(url.host ?? "nil"), Port: \(url.port ?? 0), Path: \(url.path)")
+            
             // Configure the database using the URL directly
             app.databases.use(
                 try .postgres(url: postgresURL, sqlLogLevel: .info),
