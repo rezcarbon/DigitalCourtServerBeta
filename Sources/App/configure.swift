@@ -2,6 +2,7 @@ import Vapor
 import Fluent
 import FluentPostgresDriver
 import JWT
+import NIOTLS
 
 // Configures your application
 public func configure(_ app: Application) async throws {
@@ -17,7 +18,25 @@ public func configure(_ app: Application) async throws {
         
         do {
             // Parse the DATABASE_URL to extract connection parameters
-            let config = try SQLPostgresConfiguration(url: postgresURL)
+            var config = try SQLPostgresConfiguration(url: postgresURL)
+            
+            // Check if SSL is required (common pattern in DATABASE_URL)
+            if postgresURL.contains("sslmode=require") || postgresURL.contains("ssl=true") {
+                // Configure TLS with the provided CA certificate if available
+                if let caCertPath = Environment.get("DB_CA_CERT_PATH") {
+                    app.logger.info("Configuring TLS with custom CA certificate from: \(caCertPath)")
+                    var tlsConfig = TLSConfiguration.makeClientConfiguration()
+                    tlsConfig.certificateVerification = .fullVerification
+                    tlsConfig.trustRoots = .file(caCertPath)
+                    config.tls = .require(tlsConfig)
+                } else {
+                    // Use default certificate verification (trust system certificates)
+                    app.logger.info("Configuring TLS with system default certificates")
+                    var tlsConfig = TLSConfiguration.makeClientConfiguration()
+                    tlsConfig.certificateVerification = .fullVerification
+                    config.tls = .require(tlsConfig)
+                }
+            }
             
             app.databases.use(.postgres(
                 configuration: config
