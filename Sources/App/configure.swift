@@ -18,7 +18,7 @@ public func configure(_ app: Application) async throws {
         
         do {
             // Parse the DATABASE_URL to extract connection parameters
-            var config = try SQLPostgresConfiguration(url: postgresURL)
+            let config = try SQLPostgresConfiguration(url: postgresURL)
             
             // Check if SSL is required (common pattern in DATABASE_URL)
             if postgresURL.contains("sslmode=require") || postgresURL.contains("ssl=true") {
@@ -28,19 +28,27 @@ public func configure(_ app: Application) async throws {
                     var tlsConfig = TLSConfiguration.makeClientConfiguration()
                     tlsConfig.certificateVerification = .fullVerification
                     tlsConfig.trustRoots = .file(caCertPath)
-                    config.tls = .require(tlsConfig)
+                    
+                    app.databases.use(.postgres(
+                        configuration: config,
+                        tlsConfiguration: tlsConfig
+                    ), as: .psql)
                 } else {
                     // Use default certificate verification (trust system certificates)
                     app.logger.info("Configuring TLS with system default certificates")
-                    var tlsConfig = TLSConfiguration.makeClientConfiguration()
-                    tlsConfig.certificateVerification = .fullVerification
-                    config.tls = .require(tlsConfig)
+                    let tlsConfig = TLSConfiguration.makeClientConfiguration()
+                    
+                    app.databases.use(.postgres(
+                        configuration: config,
+                        tlsConfiguration: tlsConfig
+                    ), as: .psql)
                 }
+            } else {
+                // No SSL required
+                app.databases.use(.postgres(
+                    configuration: config
+                ), as: .psql)
             }
-            
-            app.databases.use(.postgres(
-                configuration: config
-            ), as: .psql)
         } catch {
             app.logger.error("Failed to parse DATABASE_URL: \(error)")
             throw Abort(.internalServerError, reason: "Invalid DATABASE_URL configuration: \(error)")
@@ -54,8 +62,7 @@ public func configure(_ app: Application) async throws {
             port: 5432,
             username: "vapor_username",
             password: "vapor_password",
-            database: "digitalcourt",
-            tls: .disable
+            database: "digitalcourt"
         )
         
         app.databases.use(.postgres(
