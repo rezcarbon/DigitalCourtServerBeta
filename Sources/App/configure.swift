@@ -19,7 +19,7 @@ public func configure(_ app: Application) async throws {
         do {
             // Configure the database using the URL directly
             app.databases.use(
-                try .postgres(url: postgresURL),
+                try .postgres(url: postgresURL, sqlLogLevel: .info),
                 as: .psql
             )
         } catch {
@@ -30,16 +30,13 @@ public func configure(_ app: Application) async throws {
         // Fallback for local development if DATABASE_URL is not set
         app.logger.warning("DATABASE_URL not set. Using default local configuration.")
         
-        let config = SQLPostgresConfiguration(
+        app.databases.use(.postgres(
             hostname: "localhost",
             port: 5432,
             username: "vapor_username",
             password: "vapor_password",
-            database: "digitalcourt",
-            tls: .disable
-        )
-        
-        app.databases.use(.postgres(configuration: config), as: .psql)
+            database: "digitalcourt"
+        ), as: .psql)
     }
 
     // --- 2. Run Migrations ---
