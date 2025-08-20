@@ -16,35 +16,21 @@ public func configure(_ app: Application) async throws {
         app.logger.info("Configuring PostgreSQL with provided DATABASE_URL")
         var tlsConfig = TLSConfiguration.makeClientConfiguration()
         tlsConfig.certificateVerification = .none // Required for DO Managed DB
-        let postgresConfig = try SQLPostgresDriver.Configuration(url: postgresURL, tls: tlsConfig)
-        
-        // Configure connection pool for better performance
-        var poolConfig = SQLPostgresDriver.ConnectionPoolOptions()
-        poolConfig.maximumConnections = 20
-        poolConfig.minimumConnections = 2
-        poolConfig.keepAliveDuration = .seconds(30)
+        let postgresConfig = try SQLPostgresConfiguration(url: postgresURL, tls: tlsConfig)
         
         app.databases.use(.postgres(
-            configuration: postgresConfig,
-            connectionPoolOptions: poolConfig
+            configuration: postgresConfig
         ), as: .psql)
     } else {
         // Fallback for local development if DATABASE_URL is not set
         app.logger.warning("DATABASE_URL not set. Using default local configuration.")
-        
-        // Configure connection pool for local development
-        var poolConfig = SQLPostgresDriver.ConnectionPoolOptions()
-        poolConfig.maximumConnections = 10
-        poolConfig.minimumConnections = 1
-        poolConfig.keepAliveDuration = .seconds(60)
         
         try app.databases.use(.postgres(
             hostname: "localhost",
             port: 5432,
             username: "vapor_username",
             password: "vapor_password",
-            database: "digitalcourt",
-            connectionPoolOptions: poolConfig
+            database: "digitalcourt"
         ), as: .psql)
     }
 
