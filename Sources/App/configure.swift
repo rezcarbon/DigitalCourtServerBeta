@@ -15,15 +15,17 @@ public func configure(_ app: Application) async throws {
     if let postgresURL = Environment.get("DATABASE_URL") {
         app.logger.info("Configuring PostgreSQL with provided DATABASE_URL")
         
-        // Parse the DATABASE_URL to extract connection parameters
-        guard let config = SQLPostgresConfiguration(url: postgresURL) else {
-            app.logger.error("Failed to parse DATABASE_URL")
-            throw Abort(.internalServerError, reason: "Invalid DATABASE_URL configuration")
+        do {
+            // Parse the DATABASE_URL to extract connection parameters
+            let config = try SQLPostgresConfiguration(url: postgresURL)
+            
+            app.databases.use(.postgres(
+                configuration: config
+            ), as: .psql)
+        } catch {
+            app.logger.error("Failed to parse DATABASE_URL: \(error)")
+            throw Abort(.internalServerError, reason: "Invalid DATABASE_URL configuration: \(error)")
         }
-        
-        app.databases.use(.postgres(
-            configuration: config
-        ), as: .psql)
     } else {
         // Fallback for local development if DATABASE_URL is not set
         app.logger.warning("DATABASE_URL not set. Using default local configuration.")
