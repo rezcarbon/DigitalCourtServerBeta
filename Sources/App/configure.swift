@@ -17,36 +17,11 @@ public func configure(_ app: Application) async throws {
         app.logger.info("Configuring PostgreSQL with provided DATABASE_URL")
         
         do {
-            // Parse the DATABASE_URL to extract connection parameters
-            let config = try SQLPostgresConfiguration(url: postgresURL)
-            
-            // Check if SSL is required (common pattern in DATABASE_URL)
-            if postgresURL.contains("sslmode=require") || postgresURL.contains("ssl=true") {
-                // Configure TLS with the provided CA certificate if available
-                if let caCertPath = Environment.get("DB_CA_CERT_PATH") {
-                    app.logger.info("Configuring TLS with custom CA certificate from: \(caCertPath)")
-                    var tlsConfig = TLSConfiguration.makeClientConfiguration()
-                    tlsConfig.certificateVerification = .fullVerification
-                    tlsConfig.trustRoots = .file(caCertPath)
-                    
-                    app.databases.use(.postgres(
-                        configuration: config,
-                        tlsConfiguration: tlsConfig
-                    ), as: .psql)
-                } else {
-                    // Use default certificate verification (trust system certificates)
-                    app.logger.info("Configuring TLS with system default certificates")
-                    let tlsConfig = TLSConfiguration.makeClientConfiguration()
-                    
-                    app.databases.use(.postgres(
-                        configuration: config,
-                        tlsConfiguration: tlsConfig
-                    ), as: .psql)
-                }
-            } else {
-                // No SSL required
-                app.databases.use(.postgres(configuration: config), as: .psql)
-            }
+            // Configure the database using the URL directly
+            app.databases.use(
+                try .postgres(url: postgresURL),
+                as: .psql
+            )
         } catch {
             app.logger.error("Failed to parse DATABASE_URL: \(error)")
             throw Abort(.internalServerError, reason: "Invalid DATABASE_URL configuration: \(error)")
