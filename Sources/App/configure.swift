@@ -18,7 +18,9 @@ public func configure(_ app: Application) async throws {
         
         do {
             // Parse the DATABASE_URL to extract connection parameters
-            let config = try PostgresConfiguration(url: postgresURL)
+            guard let config = PostgresConfiguration(url: postgresURL) else {
+                throw Abort(.internalServerError, reason: "Invalid DATABASE_URL format")
+            }
             
             // Check if SSL is required (common pattern in DATABASE_URL)
             if postgresURL.contains("sslmode=require") || postgresURL.contains("ssl=true") {
@@ -29,13 +31,19 @@ public func configure(_ app: Application) async throws {
                     tlsConfig.certificateVerification = .fullVerification
                     tlsConfig.trustRoots = .file(caCertPath)
                     
-                    app.databases.use(.postgres(configuration: config, tlsConfiguration: tlsConfig), as: .psql)
+                    app.databases.use(.postgres(
+                        configuration: config,
+                        tlsConfiguration: tlsConfig
+                    ), as: .psql)
                 } else {
                     // Use default certificate verification (trust system certificates)
                     app.logger.info("Configuring TLS with system default certificates")
                     let tlsConfig = TLSConfiguration.makeClientConfiguration()
                     
-                    app.databases.use(.postgres(configuration: config, tlsConfiguration: tlsConfig), as: .psql)
+                    app.databases.use(.postgres(
+                        configuration: config,
+                        tlsConfiguration: tlsConfig
+                    ), as: .psql)
                 }
             } else {
                 // No SSL required
