@@ -29,25 +29,17 @@ public func configure(_ app: Application) async throws {
                     tlsConfig.certificateVerification = .fullVerification
                     tlsConfig.trustRoots = .file(caCertPath)
                     
-                    app.databases.use(.postgres(
-                        configuration: config,
-                        tlsConfiguration: tlsConfig
-                    ), as: .psql)
+                    app.databases.use(.init(config, tlsConfiguration: tlsConfig), as: .psql)
                 } else {
                     // Use default certificate verification (trust system certificates)
                     app.logger.info("Configuring TLS with system default certificates")
                     let tlsConfig = TLSConfiguration.makeClientConfiguration()
                     
-                    app.databases.use(.postgres(
-                        configuration: config,
-                        tlsConfiguration: tlsConfig
-                    ), as: .psql)
+                    app.databases.use(.init(config, tlsConfiguration: tlsConfig), as: .psql)
                 }
             } else {
                 // No SSL required
-                app.databases.use(.postgres(
-                    configuration: config
-                ), as: .psql)
+                app.databases.use(.init(make: config), as: .psql)
             }
         } catch {
             app.logger.error("Failed to parse DATABASE_URL: \(error)")
@@ -62,12 +54,11 @@ public func configure(_ app: Application) async throws {
             port: 5432,
             username: "vapor_username",
             password: "vapor_password",
-            database: "digitalcourt"
+            database: "digitalcourt",
+            tls: .disable
         )
         
-        app.databases.use(.postgres(
-            configuration: config
-        ), as: .psql)
+        app.databases.use(.init(make: config), as: .psql)
     }
 
     // --- 2. Run Migrations ---
