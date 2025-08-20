@@ -14,23 +14,27 @@ public func configure(_ app: Application) async throws {
     // App Platform provides the DATABASE_URL automatically.
     if let postgresURL = Environment.get("DATABASE_URL") {
         app.logger.info("Configuring PostgreSQL with provided DATABASE_URL")
-        var tlsConfig = TLSConfiguration.makeClientConfiguration()
-        tlsConfig.certificateVerification = .none // Required for DO Managed DB
-        let postgresConfig = try SQLPostgresConfiguration(url: postgresURL, tls: tlsConfig)
+        
+        // Parse the DATABASE_URL to extract connection parameters
+        let config = PostgresConfiguration(url: postgresURL)
         
         app.databases.use(.postgres(
-            configuration: postgresConfig
+            configuration: config
         ), as: .psql)
     } else {
         // Fallback for local development if DATABASE_URL is not set
         app.logger.warning("DATABASE_URL not set. Using default local configuration.")
         
-        try app.databases.use(.postgres(
+        let config = PostgresConfiguration(
             hostname: "localhost",
             port: 5432,
             username: "vapor_username",
             password: "vapor_password",
             database: "digitalcourt"
+        )
+        
+        app.databases.use(.postgres(
+            configuration: config
         ), as: .psql)
     }
 
