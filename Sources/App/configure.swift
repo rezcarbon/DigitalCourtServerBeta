@@ -2,6 +2,7 @@ import Vapor
 import JWT
 import Fluent
 import FluentPostgresDriver
+import Foundation
 
 // Configures your application
 public func configure(_ app: Application) async throws {
@@ -32,16 +33,27 @@ public func configure(_ app: Application) async throws {
         let databaseName = Environment.get("DATABASE_NAME") ?? "mustaffar"
         
         // Determine SSL mode
-        let sslMode = Environment.get("DATABASE_SSLMODE") ?? "prefer"
+        let sslMode = Environment.get("DATABASE_SSLMODE") ?? "disable"
         
         if sslMode == "require" || sslMode == "verify-ca" || sslMode == "verify-full" {
             // Configure with SSL
             var tlsConfig = TLSConfiguration.makeClientConfiguration()
-            tlsConfig.certificateVerification = .fullVerification
             
-            // If we have a CA certificate path, use it
-            if let caCertPath = Environment.get("DATABASE_CA_CERT_PATH") {
-                tlsConfig.trustRoots = .file(caCertPath)
+            // Use certificate verification based on ssl mode
+            if sslMode == "verify-full" {
+                tlsConfig.certificateVerification = .fullVerification
+            } else {
+                tlsConfig.certificateVerification = .noHostnameVerification
+            }
+            
+            // Try to use the embedded certificate if it exists
+            let currentDirectory = FileManager.default.currentDirectoryPath
+            let certPath = "\(currentDirectory)/Sources/App/certs/ca-certificate.crt"
+            if FileManager.default.fileExists(atPath: certPath) {
+                tlsConfig.trustRoots = .file(certPath)
+                app.logger.info("Using embedded CA certificate for database SSL connection: \(certPath)")
+            } else {
+                app.logger.warning("CA certificate not found at \(certPath), using system defaults")
             }
             
             let postgresConfig = SQLPostgresConfiguration(
