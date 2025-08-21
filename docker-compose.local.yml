@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  # MongoDB service for local development
+  db:
+    image: mongo:5.0
+    container_name: digitalcourt-mongodb
+    restart: unless-stopped
+    ports:
+      - '27017:27017'
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: vapor_username
+      MONGO_INITDB_ROOT_PASSWORD: vapor_password
+      MONGO_INITDB_DATABASE: digitalcourt
+    volumes:
+      - mongodb_data:/data/db
+
+  # App service
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: digitalcourt-app
+    restart: unless-stopped
+    ports:
+      - '8080:8080'
+    environment:
+      # The MONGODB_URL points to the 'db' service above
+      MONGODB_URL: mongodb://vapor_username:vapor_password@db:27017/digitalcourt
+      JWT_SECRET: your-super-secret-jwt-key-minimum-32-characters
+      LOG_LEVEL: info
+    depends_on:
+      - db
+    volumes:
+      - .:/app
+
+volumes:
+  mongodb_data:
