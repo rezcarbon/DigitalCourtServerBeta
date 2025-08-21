@@ -25,13 +25,17 @@ public func configure(_ app: Application) async throws {
     let password = Environment.get("DATABASE_PASSWORD") ?? "***REMOVED***"
     let database = Environment.get("DATABASE_NAME") ?? "mustaffar"
     
-    app.databases.use(.postgres(
+    // Create PostgreSQL configuration
+    let postgresConfig = PostgresConfiguration(
         hostname: hostname,
         port: port,
         username: username,
         password: password,
-        database: database,
-        tlsConfiguration: .makeClientConfiguration()
+        database: database
+    )
+    
+    app.databases.use(.postgres(
+        configuration: postgresConfig
     ), as: .psql)
     
     app.logger.info("Database configuration initialized")
