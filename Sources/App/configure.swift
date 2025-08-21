@@ -19,17 +19,56 @@ public func configure(_ app: Application) async throws {
     app.logger.info("JWT configuration initialized")
 
     // --- 3. Configure PostgreSQL Database ---
-    // Create database URL from environment variables
-    let databaseHost = Environment.get("DATABASE_HOST") ?? "localhost"
-    let databasePort = Environment.get("DATABASE_PORT") ?? "5432"
-    let databaseUsername = Environment.get("DATABASE_USERNAME") ?? "mustaffar"
-    let databasePassword = Environment.get("DATABASE_PASSWORD") ?? ""
-    let databaseName = Environment.get("DATABASE_NAME") ?? "mustaffar"
+    // Check if DATABASE_URL is provided (which may include SSL configuration)
+    if let databaseURL = Environment.get("DATABASE_URL") {
+        // Use the provided DATABASE_URL as-is
+        try app.databases.use(.postgres(url: databaseURL), as: .psql)
+    } else {
+        // Create database configuration from individual environment variables
+        let databaseHost = Environment.get("DATABASE_HOST") ?? "localhost"
+        let databasePort = Environment.get("DATABASE_PORT").flatMap(Int.init) ?? 5432
+        let databaseUsername = Environment.get("DATABASE_USERNAME") ?? "mustaffar"
+        let databasePassword = Environment.get("DATABASE_PASSWORD") ?? ""
+        let databaseName = Environment.get("DATABASE_NAME") ?? "mustaffar"
+        
+        // Determine SSL mode
+        let sslMode = Environment.get("DATABASE_SSLMODE") ?? "prefer"
+        
+        if sslMode == "require" || sslMode == "verify-ca" || sslMode == "verify-full" {
+            // Configure with SSL
+            var tlsConfig = TLSConfiguration.makeClientConfiguration()
+            tlsConfig.certificateVerification = .fullVerification
+            
+            // If we have a CA certificate path, use it
+            if let caCertPath = Environment.get("DATABASE_CA_CERT_PATH") {
+                tlsConfig.trustRoots = .file(caCertPath)
+            }
+            
+            let postgresConfig = SQLPostgresConfiguration(
+                hostname: databaseHost,
+                port: databasePort,
+                username: databaseUsername,
+                password: databasePassword,
+                database: databaseName,
+                tls: .require(tlsConfig)
+            )
+            
+            try app.databases.use(.postgres(configuration: postgresConfig), as: .psql)
+        } else {
+            // Configure without SSL for local development
+            let postgresConfig = SQLPostgresConfiguration(
+                hostname: databaseHost,
+                port: databasePort,
+                username: databaseUsername,
+                password: databasePassword,
+                database: databaseName,
+                tls: .disable
+            )
+            
+            try app.databases.use(.postgres(configuration: postgresConfig), as: .psql)
+        }
+    }
     
-    let databaseURL = Environment.get("DATABASE_URL") ?? 
-        "postgresql://\(databaseUsername):\(databasePassword)@\(databaseHost):\(databasePort)/\(databaseName)?sslmode=require"
-    
-    try app.databases.use(.postgres(url: databaseURL), as: .psql)
     app.logger.info("Database configuration initialized")
 
     // --- 4. Configure Migrations ---
