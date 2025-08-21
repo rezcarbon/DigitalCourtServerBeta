@@ -13,11 +13,12 @@
 The following environment variables are required:
 
 - `JWT_SECRET` - Secret key for JWT token signing
-- `DATABASE_HOST` - PostgreSQL database host (default: DigitalOcean DB host)
-- `DATABASE_PORT` - PostgreSQL database port (default: 25060)
-- `DATABASE_USERNAME` - PostgreSQL database username (default: mustaffar)
-- `DATABASE_PASSWORD` - PostgreSQL database password (default: ***REMOVED***)
-- `DATABASE_NAME` - PostgreSQL database name (default: mustaffar)
+- `DATABASE_HOST` - PostgreSQL database host (default: localhost)
+- `DATABASE_PORT` - PostgreSQL database port (default: 5432)
+- `DATABASE_USERNAME` - PostgreSQL database username (default: postgres)
+- `DATABASE_PASSWORD` - PostgreSQL database password (no default)
+- `DATABASE_NAME` - PostgreSQL database name (default: digitalcourt)
+- `DATABASE_URL` - Complete PostgreSQL database URL (optional - if provided, other DB variables are ignored)
 
 ## Local Development
 

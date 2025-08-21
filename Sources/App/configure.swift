@@ -19,8 +19,15 @@ public func configure(_ app: Application) async throws {
     app.logger.info("JWT configuration initialized")
 
     // --- 3. Configure PostgreSQL Database ---
+    // Create database URL from environment variables
+    let databaseHost = Environment.get("DATABASE_HOST") ?? "localhost"
+    let databasePort = Environment.get("DATABASE_PORT") ?? "5432"
+    let databaseUsername = Environment.get("DATABASE_USERNAME") ?? "mustaffar"
+    let databasePassword = Environment.get("DATABASE_PASSWORD") ?? ""
+    let databaseName = Environment.get("DATABASE_NAME") ?? "mustaffar"
+    
     let databaseURL = Environment.get("DATABASE_URL") ?? 
-        "postgresql://mustaffar:***REMOVED***@app-89170558-05c3-45d7-b88d-620cb9a91929-do-user-18627753-0.d.db.ondigitalocean.com:25060/mustaffar?sslmode=require"
+        "postgresql://\(databaseUsername):\(databasePassword)@\(databaseHost):\(databasePort)/\(databaseName)?sslmode=require"
     
     try app.databases.use(.postgres(url: databaseURL), as: .psql)
     app.logger.info("Database configuration initialized")
