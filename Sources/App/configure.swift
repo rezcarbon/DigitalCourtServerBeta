@@ -25,8 +25,8 @@ public func configure(_ app: Application) async throws {
     let password = Environment.get("DATABASE_PASSWORD") ?? "***REMOVED***"
     let database = Environment.get("DATABASE_NAME") ?? "mustaffar"
     
-    // Create PostgreSQL configuration
-    let postgresConfig = PostgresConfiguration(
+    // Create SQL PostgreSQL configuration
+    let postgresConfig = SQLPostgresConfiguration(
         hostname: hostname,
         port: port,
         username: username,
@@ -43,6 +43,7 @@ public func configure(_ app: Application) async throws {
     // --- 4. Configure Migrations ---
     app.migrations.add(CreateUser())
     app.migrations.add(CreateUserIndex())
+    app.migrations.add(CreateCase())
     
     // Run migrations
     try await app.autoMigrate()
