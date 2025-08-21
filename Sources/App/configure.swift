@@ -32,7 +32,7 @@ public func configure(_ app: Application) async throws {
         username: username,
         password: password,
         database: database,
-        tls: .prefer
+        tls: .disable
     )
     
     app.databases.use(.postgres(
