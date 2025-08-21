@@ -31,7 +31,8 @@ public func configure(_ app: Application) async throws {
         port: port,
         username: username,
         password: password,
-        database: database
+        database: database,
+        tls: .prefer
     )
     
     app.databases.use(.postgres(
