@@ -2,7 +2,7 @@ import Vapor
 import Fluent
 
 // User model that works with PostgreSQL database
-final class User: Model, Content {
+final class User: Model, Content, @unchecked Sendable {
     // Name of the table or collection
     static let schema = "users"
     

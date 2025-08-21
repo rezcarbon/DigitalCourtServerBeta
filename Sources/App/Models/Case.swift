@@ -2,7 +2,7 @@ import Vapor
 import Fluent
 
 // Model representing a court case
-final class Case: Model, Content {
+final class Case: Model, Content, @unchecked Sendable {
     // Name of the table or collection
     static let schema = "cases"
     
