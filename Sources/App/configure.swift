@@ -19,26 +19,10 @@ public func configure(_ app: Application) async throws {
     app.logger.info("JWT configuration initialized")
 
     // --- 3. Configure PostgreSQL Database ---
-    let hostname = Environment.get("DATABASE_HOST") ?? "app-89170558-05c3-45d7-b88d-620cb9a91929-do-user-18627753-0.d.db.ondigitalocean.com"
-    let port = Environment.get("DATABASE_PORT").flatMap(Int.init) ?? 25060
-    let username = Environment.get("DATABASE_USERNAME") ?? "mustaffar"
-    let password = Environment.get("DATABASE_PASSWORD") ?? "***REMOVED***"
-    let database = Environment.get("DATABASE_NAME") ?? "mustaffar"
+    let databaseURL = Environment.get("DATABASE_URL") ?? 
+        "postgresql://mustaffar:***REMOVED***@app-89170558-05c3-45d7-b88d-620cb9a91929-do-user-18627753-0.d.db.ondigitalocean.com:25060/mustaffar?sslmode=require"
     
-    // Create SQL PostgreSQL configuration
-    let postgresConfig = SQLPostgresConfiguration(
-        hostname: hostname,
-        port: port,
-        username: username,
-        password: password,
-        database: database,
-        tls: .disable
-    )
-    
-    app.databases.use(.postgres(
-        configuration: postgresConfig
-    ), as: .psql)
-    
+    try app.databases.use(.postgres(url: databaseURL), as: .psql)
     app.logger.info("Database configuration initialized")
 
     // --- 4. Configure Migrations ---
